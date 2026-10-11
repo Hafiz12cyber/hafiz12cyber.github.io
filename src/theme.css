@@ -125,7 +125,6 @@ button:disabled { cursor: not-allowed; opacity: .55; }
 .topbar { position: sticky; z-index: 10; top: 0; display: flex; height: 67px; flex: 0 0 auto; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--line); padding: 0 35px; background: #fffcf1ed; backdrop-filter: blur(14px); }
 .breadcrumbs { display: flex; align-items: center; gap: 10px; color: #8a8c80; font-size: 9px; font-weight: 700; letter-spacing: 1px; }
 .breadcrumbs strong { color: #334238; }
-.breadcrumb-divider { color: #c5c4b8; }
 .topbar-user { display: flex; align-items: center; gap: 23px; }
 .topbar-account { display: flex; align-items: center; gap: 9px; border: 0; padding: 0; background: transparent; cursor: pointer; text-align: left; }
 .topbar-account > span:last-child { display: flex; flex-direction: column; gap: 2px; }
