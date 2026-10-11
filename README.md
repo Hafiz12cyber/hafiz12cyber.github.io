@@ -25,7 +25,7 @@ Open `http://localhost:5173`. Local D1 and R2 use Wrangler's local emulation; lo
 
 ## Deploy
 
-The current production Worker and D1 database are provisioned in the configured Cloudflare account, and the production schema is migrated. `VITE_API_BASE_URL` is configured as a GitHub Actions repository variable for the Pages build. The Worker was initially deployed through the authenticated Wrangler CLI session; GitHub Actions will deploy future Worker changes only after `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` are added as repository Actions secrets.
+The current production Worker and D1 database are provisioned in the configured Cloudflare account, and the production schema is migrated. `VITE_API_BASE_URL` and `CLOUDFLARE_ACCOUNT_ID` are configured as GitHub Actions repository variables. The Worker was initially deployed through the authenticated Wrangler CLI session; GitHub Actions will deploy future Worker changes once a fresh `CLOUDFLARE_API_TOKEN` is added as a repository Actions secret.
 
 For a new Cloudflare account or a separate deployment:
 
@@ -33,7 +33,7 @@ For a new Cloudflare account or a separate deployment:
 2. Create the R2 bucket with `npx wrangler r2 bucket create agristat-caraga` if it does not already exist.
 3. Apply the schema with `npm run db:migrate:remote`.
 4. Set Worker secrets using `npx wrangler secret put NAME` (Wrangler prompts for each value): `SUPER_ADMIN_EMAIL`, `SUPER_ADMIN_PASSWORD`, `SUPER_ADMIN_NAME`, and `CREDENTIAL_ENCRYPTION_KEY`. Use a new, unique Super Admin password of at least 12 characters. Generate a 32-byte encryption key with `node -e "console.log(require('node:crypto').randomBytes(32).toString('hex'))"`.
-5. Add GitHub Actions secrets `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`. Generate a fresh API token with only the permissions needed to deploy Workers and manage the configured D1/R2 resources; do not reuse credentials previously shared in chat. Add the Actions variable `VITE_API_BASE_URL` with the deployed Worker URL ending in `/api`.
+5. Add the GitHub Actions secret `CLOUDFLARE_API_TOKEN`. Generate a fresh API token with only the permissions needed to deploy Workers and manage the configured D1/R2 resources; do not reuse credentials previously shared in chat. Add Actions variables `CLOUDFLARE_ACCOUNT_ID` and `VITE_API_BASE_URL` with the Cloudflare account ID and deployed Worker URL ending in `/api`.
 6. Ensure GitHub Pages is configured to deploy with GitHub Actions, then push to `main`. The workflow validates the API URL, builds and deploys Pages, and deploys the Worker only when both Cloudflare Actions secrets are present.
 
 The Worker `APP_ORIGIN` in `wrangler.jsonc` must exactly match the public Pages origin. The Cloudflare R2 binding accesses the bucket directly; the S3 endpoint and S3 secret access key are not needed in the app.
