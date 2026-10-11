@@ -1,6 +1,6 @@
 import { useEffect, useId, useMemo, useRef, useState, type FormEvent, type InputHTMLAttributes, type SelectHTMLAttributes } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ArrowDownUp, ArrowRight, BadgeCheck, Check, ChevronDown, ChevronLeft, ChevronRight, Copy, Eye, EyeOff, FileSpreadsheet, Leaf, LogOut, Menu, Search, ShieldCheck, UserRound, UsersRound, X } from 'lucide-react'
+import { ArrowDownUp, ArrowRight, BadgeCheck, Check, ChevronDown, ChevronLeft, ChevronRight, Copy, FileSpreadsheet, Leaf, LogOut, Menu, Search, ShieldCheck, UserRound, UsersRound, X } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import * as Tabs from '@radix-ui/react-tabs'
 import { flexRender, getCoreRowModel, getPaginationRowModel, getSortedRowModel, useReactTable, type ColumnDef, type SortingState } from '@tanstack/react-table'
@@ -126,7 +126,6 @@ function AdminDashboard({ user, notify }: { user: User; notify: (text: string) =
   const [status, setStatus] = useState('all')
   const [office, setOffice] = useState('all')
   const [province, setProvince] = useState('all')
-  const [revealed, setRevealed] = useState<Set<string>>(() => new Set())
   const [sorting, setSorting] = useState<SortingState>([{ id: 'createdAt', desc: true }])
   const usersQuery = useQuery({ queryKey: ['admin-users'], queryFn: () => api.get<{ users: Registrant[] }>('/admin/users').then((result) => result.users) })
   const updateMutation = useMutation({
@@ -143,13 +142,13 @@ function AdminDashboard({ user, notify }: { user: User; notify: (text: string) =
   })
   const columns = useMemo<ColumnDef<Registrant>[]>(() => [
     { accessorKey: 'fullName', header: 'Registrant', cell: ({ row }) => <div className="registrant-cell"><Avatar user={row.original} compact /><span><strong>{row.original.fullName}</strong><small>{row.original.email}</small></span></div> },
-    { accessorKey: 'username', header: 'Account', cell: ({ row }) => <div className="account-cell"><strong>{row.original.username}</strong><span className="password-cell">{row.original.initialPassword ? <><span>{revealed.has(row.original.id) ? row.original.initialPassword : '••••••••••••'}</span><button className="icon-button mini-icon" type="button" title="Toggle password visibility" aria-label="Toggle password visibility" onClick={() => setRevealed((current) => { const next = new Set(current); if (next.has(row.original.id)) next.delete(row.original.id); else next.add(row.original.id); return next })}>{revealed.has(row.original.id) ? <EyeOff size={13} /> : <Eye size={13} />}</button><button className="icon-button mini-icon" type="button" title="Copy temporary password" aria-label="Copy temporary password" onClick={() => { void copyText(row.original.initialPassword ?? '').then((copied) => notify(copied ? 'Temporary password copied.' : 'Could not copy password. Please select and copy it manually.')) }}><Copy size={13} /></button></> : <span className="muted">Password changed</span>}</span></div> },
+    { accessorKey: 'username', header: 'Account', cell: ({ row }) => <div className="account-cell"><strong>{row.original.username}</strong><span className="password-cell">{row.original.initialPassword ? <><span>••••••••••••</span><button className="icon-button mini-icon" type="button" title="Copy temporary password" aria-label="Copy temporary password" onClick={() => { void copyText(row.original.initialPassword ?? '').then((copied) => notify(copied ? 'Temporary password copied.' : 'Could not copy password. Please select and copy it manually.')) }}><Copy size={13} /></button></> : <span className="muted">Password changed</span>}</span></div> },
     { accessorKey: 'designation', header: 'Office / designation', cell: ({ row }) => <div className="designation-cell"><strong>{row.original.office}</strong><small>{row.original.designation}</small></div> },
     { accessorKey: 'status', header: 'Review', cell: ({ row }) => <span className={`status-pill status-${row.original.status}`}>{row.original.status}</span> },
     { accessorKey: 'role', header: 'Role', cell: ({ row }) => <select className="table-select role-select" aria-label={`Role for ${row.original.fullName}`} value={row.original.role} disabled={row.original.id === user.id || updateMutationRef.current.isPending} onChange={(event) => updateMutationRef.current.mutate({ id: row.original.id, action: 'role', value: event.target.value })}><option value="admin">Admin</option><option value="super_admin">Super Admin</option></select> },
     { accessorKey: 'createdAt', header: 'Submitted', cell: ({ row }) => new Intl.DateTimeFormat('en-PH', { dateStyle: 'medium' }).format(new Date(row.original.createdAt)) },
     { id: 'actions', header: 'Review action', cell: ({ row }) => row.original.id === user.id ? <span className="muted">Current account</span> : <div className="row-actions"><button type="button" className="review-action approve-action" aria-label={`Approve ${row.original.fullName}`} disabled={updateMutationRef.current.isPending || row.original.status === 'approved'} onClick={() => updateMutationRef.current.mutate({ id: row.original.id, action: 'status', value: 'approved' })}><Check size={14} /> Approve</button><button type="button" className="review-action reject-action" title="Disapprove account" aria-label={`Disapprove ${row.original.fullName}`} disabled={updateMutationRef.current.isPending || row.original.status === 'rejected'} onClick={() => updateMutationRef.current.mutate({ id: row.original.id, action: 'status', value: 'rejected' })}><X size={14} /></button></div> },
-  ], [notify, revealed, user.id])
+  ], [notify, user.id])
   const table = useReactTable({ data: filtered, columns, state: { sorting }, onSortingChange: setSorting, getCoreRowModel: getCoreRowModel(), getSortedRowModel: getSortedRowModel(), getPaginationRowModel: getPaginationRowModel(), initialState: { pagination: { pageSize: 8 } } })
   const pending = users.filter((item) => item.status === 'pending').length
   const approved = users.filter((item) => item.status === 'approved').length
