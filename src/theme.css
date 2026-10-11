@@ -101,6 +101,10 @@ button:disabled { cursor: not-allowed; opacity: .55; }
 .credential-line { display: flex; justify-content: space-between; gap: 12px; border-top: 1px solid var(--line); padding: 12px 0; font-size: 12px; }
 .credential-line span { color: #777e73; }
 .credential-line strong { overflow-wrap: anywhere; color: var(--green-deep); font-family: var(--display); }
+.credential-password { display: flex; min-width: 0; align-items: center; gap: 8px; }
+.credential-password strong { min-width: 0; overflow-wrap: anywhere; }
+.credential-visibility-toggle { display: grid; width: 30px; height: 30px; flex: 0 0 auto; place-items: center; border: 1px solid #dedfd5; border-radius: 3px; color: #59655a; background: #fffefa; cursor: pointer; }
+.credential-visibility-toggle:hover { border-color: #c7cbbd; background: #f7f5e9; }
 .credential-result .button { margin-top: 10px; }
 .auth-footer { display: flex; width: min(100%, 470px); justify-content: space-between; margin-top: 22px; color: #96998e; font-size: 8px; font-weight: 700; letter-spacing: 1px; }
 
