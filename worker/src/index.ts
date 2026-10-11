@@ -9,14 +9,20 @@ const municipalities: Record<string, string[]> = {
   'Surigao del Sur': ['Barobo', 'Bayabas', 'City of Bislig', 'Cagwait', 'Cantilan', 'Carmen', 'Carrascal', 'Cortes', 'Hinatuan', 'Lanuza', 'Lianga', 'Lingig', 'Madrid', 'Marihatag', 'San Agustin', 'San Miguel', 'Tagbina', 'Tago', 'City of Tandag'],
   'Province of Dinagat Islands': ['Basilisa', 'Cagdianao', 'Dinagat', 'Libjo', 'Loreto', 'San Jose', 'Tubajon'],
 }
-const offices = [
+interface Office { name: string; abbreviation: string; scope: 'province' | 'municipality' | 'designated'; options?: string[]; usernamePrefix?: string }
+const offices: Office[] = [
   { name: 'Agricultural Program Coordinating Office', abbreviation: 'apco', scope: 'province' },
+  { name: 'Corn Program', abbreviation: 'cp', scope: 'designated', options: ['Regional Corn Program Alternate Coordinator', 'Regional Corn Program Coordinator'] },
+  { name: 'Fisheries and Aquatic Resources', abbreviation: 'far', scope: 'designated', options: ['Regional Fisheries and Aquatic Resources Alternate Coordinator', 'Regional Fisheries and Aquatic Resources Coordinator'] },
+  { name: 'High Value Crop Development Program', abbreviation: 'hvcdp', scope: 'designated', options: ['Regional High Value Crop Development Program Alternate Coordinator', 'Regional High Value Crop Development Program Coordinator'] },
+  { name: 'Livestock Program', abbreviation: 'lp', scope: 'designated', options: ['Regional Livestock Program Alternate Coordinator', 'Regional Livestock Program Coordinator'] },
   { name: 'Municipal Agriculture Office', abbreviation: 'mao', scope: 'municipality' },
   { name: 'Provincial Agriculture Office', abbreviation: 'pao', scope: 'province' },
   { name: 'Provincial Coordination and Management Office', abbreviation: 'pcmo', scope: 'province' },
-  { name: 'Regional Coordination and Management Office', abbreviation: 'rcmo', scope: 'designated', options: ['Data Analyst', 'Budget Officer', 'Team Lead'] },
-  { name: 'Department of Agriculture', abbreviation: 'da', scope: 'designated', options: ['Regional AgriStat Focal Person', 'Regional AgriStat Alternate Focal Person'] },
-] as const
+  { name: 'Regional Agricultural Statistics', abbreviation: 'ras', usernamePrefix: 'da', scope: 'designated', options: ['Regional Alternate Focal Person', 'Regional Focal Person'] },
+  { name: 'Regional Coordination and Management Office', abbreviation: 'rcmo', scope: 'designated', options: ['Budget Officer', 'Data Analyst', 'Team Lead'] },
+  { name: 'Rice Program', abbreviation: 'rp', scope: 'designated', options: ['Regional Rice Program Alternate Coordinator', 'Regional Rice Program Coordinator'] },
+]
 
 interface Env {
   DB: D1Database
@@ -115,11 +121,11 @@ function generatedPassword() {
   return Array.from(crypto.getRandomValues(new Uint8Array(16)), (byte) => alphabet[byte % alphabet.length]).join('')
 }
 function slug(value: string) { return value.normalize('NFKD').replace(/[\u0300-\u036f]/gu, '').toLowerCase().replace(/[^a-z0-9]+/gu, '.').replace(/^\.+|\.+$/gu, '') || 'user' }
-function registrationUsername(office: string, province: string, municipality: string, lastName: string) {
+function registrationUsername(office: string, province: string, municipality: string, lastName: string, usernamePrefix = office) {
   const surname = slug(lastName)
   if (office === 'mao') return `mao-${slug(municipality)}.${surname}`
   if (office === 'apco' || office === 'pao' || office === 'pcmo') return `${office}-${slug(province)}.${surname}`
-  return `${office}.${surname}`
+  return `${usernamePrefix}.${surname}`
 }
 function fullName(user: UserRow) { return [user.first_name, user.middle_name, user.last_name].filter(Boolean).join(' ') + (user.suffix ? `, ${user.suffix}` : '') }
 function publicUser(user: UserRow) {
@@ -172,13 +178,13 @@ async function register(request: Request, env: Env) {
   const municipality = selected.scope === 'municipality' ? required(body.municipality, 'Municipality') : ''
   if (municipality && !(municipalities[province] ?? []).includes(municipality)) throw new HttpError(400, 'Choose a municipality in the selected province.')
   const designated = selected.scope === 'designated' ? required(body.designated, 'Designated role') : ''
-  if (selected.scope === 'designated' && !selected.options.some((option) => option === designated)) throw new HttpError(400, 'Choose a valid designation for the selected office.')
+  if (selected.scope === 'designated' && !selected.options?.some((option) => option === designated)) throw new HttpError(400, 'Choose a valid designation for the selected office.')
   const email = required(body.email, 'Email', 254).toLowerCase()
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/u.test(email)) throw new HttpError(400, 'Enter a valid email address.')
   if (await env.DB.prepare('SELECT id FROM users WHERE email = ? COLLATE NOCASE LIMIT 1').bind(email).first<{ id: string }>()) throw new HttpError(409, 'An account with this email address already exists.')
   const location = selected.scope === 'municipality' ? `${municipality}, ${province}` : province
   const designation = `${selected.abbreviation.toUpperCase()} - ${selected.scope === 'designated' ? designated : location}`
-  const base = registrationUsername(selected.abbreviation, province, municipality, lastName)
+  const base = registrationUsername(selected.abbreviation, province, municipality, lastName, selected.usernamePrefix)
   let username = base
   for (let number = 2; await env.DB.prepare('SELECT id FROM users WHERE username = ? COLLATE NOCASE LIMIT 1').bind(username).first<{ id: string }>(); number += 1) username = `${base}${number}`
   const initialPassword = generatedPassword()

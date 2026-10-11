@@ -8,24 +8,29 @@ export const municipalitiesByProvince: Record<string, string[]> = {
   'Province of Dinagat Islands': ['Basilisa', 'Cagdianao', 'Dinagat', 'Libjo', 'Loreto', 'San Jose', 'Tubajon'],
 }
 
-export interface Office { name: string; abbreviation: string; scope: 'province' | 'municipality' | 'designated'; options?: string[] }
+export interface Office { name: string; abbreviation: string; scope: 'province' | 'municipality' | 'designated'; options?: string[]; usernamePrefix?: string; aliases?: string[] }
 export const offices: Office[] = [
   { name: 'Agricultural Program Coordinating Office', abbreviation: 'apco', scope: 'province' },
+  { name: 'Corn Program', abbreviation: 'cp', scope: 'designated', options: ['Regional Corn Program Alternate Coordinator', 'Regional Corn Program Coordinator'] },
+  { name: 'Fisheries and Aquatic Resources', abbreviation: 'far', scope: 'designated', options: ['Regional Fisheries and Aquatic Resources Alternate Coordinator', 'Regional Fisheries and Aquatic Resources Coordinator'] },
+  { name: 'High Value Crop Development Program', abbreviation: 'hvcdp', scope: 'designated', options: ['Regional High Value Crop Development Program Alternate Coordinator', 'Regional High Value Crop Development Program Coordinator'] },
+  { name: 'Livestock Program', abbreviation: 'lp', scope: 'designated', options: ['Regional Livestock Program Alternate Coordinator', 'Regional Livestock Program Coordinator'] },
   { name: 'Municipal Agriculture Office', abbreviation: 'mao', scope: 'municipality' },
   { name: 'Provincial Agriculture Office', abbreviation: 'pao', scope: 'province' },
   { name: 'Provincial Coordination and Management Office', abbreviation: 'pcmo', scope: 'province' },
-  { name: 'Regional Coordination and Management Office', abbreviation: 'rcmo', scope: 'designated', options: ['Data Analyst', 'Budget Officer', 'Team Lead'] },
-  { name: 'Department of Agriculture', abbreviation: 'da', scope: 'designated', options: ['Regional AgriStat Focal Person', 'Regional AgriStat Alternate Focal Person'] },
+  { name: 'Regional Agricultural Statistics', abbreviation: 'ras', scope: 'designated', usernamePrefix: 'da', aliases: ['Department of Agriculture', 'da'], options: ['Regional Alternate Focal Person', 'Regional Focal Person'] },
+  { name: 'Regional Coordination and Management Office', abbreviation: 'rcmo', scope: 'designated', options: ['Budget Officer', 'Data Analyst', 'Team Lead'] },
+  { name: 'Rice Program', abbreviation: 'rp', scope: 'designated', options: ['Regional Rice Program Alternate Coordinator', 'Regional Rice Program Coordinator'] },
 ]
 
 export function expandedOfficeName(officeValue: string) {
-  return offices.find((office) => office.name === officeValue || office.abbreviation.toLowerCase() === officeValue.toLowerCase())?.name ?? officeValue
+  return offices.find((office) => office.name === officeValue || office.abbreviation.toLowerCase() === officeValue.toLowerCase() || office.aliases?.some((alias) => alias.toLowerCase() === officeValue.toLowerCase()))?.name ?? officeValue
 }
 
 export function abbreviatedDesignation(officeValue: string, designation: string) {
-  const office = offices.find((item) => item.name === officeValue || item.abbreviation.toLowerCase() === officeValue.toLowerCase())
+  const office = offices.find((item) => item.name === officeValue || item.abbreviation.toLowerCase() === officeValue.toLowerCase() || item.aliases?.some((alias) => alias.toLowerCase() === officeValue.toLowerCase()))
   if (!office) return designation
-  const prefixes = [office.name, office.abbreviation, office.abbreviation.toUpperCase()].map((value) => `${value} - `)
+  const prefixes = [office.name, office.abbreviation, office.abbreviation.toUpperCase(), ...(office.aliases ?? []), ...(office.aliases ?? []).map((alias) => alias.toUpperCase())].map((value) => `${value} - `)
   const prefix = prefixes.find((value) => designation.startsWith(value))
   return prefix ? `${office.abbreviation.toUpperCase()} - ${designation.slice(prefix.length)}` : designation
 }

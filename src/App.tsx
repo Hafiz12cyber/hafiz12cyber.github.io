@@ -158,7 +158,7 @@ function AdminDashboard({ user, notify }: { user: User; notify: (text: string) =
   const filtered = useMemo(() => users.filter((item) => {
     const term = search.trim().toLowerCase()
     const match = !term || [item.fullName, item.email, item.username, item.designation].some((value) => value.toLowerCase().includes(term))
-    return match && (status === 'all' || item.status === status) && (office === 'all' || item.office === office) && (province === 'all' || item.province === province)
+    return match && (status === 'all' || item.status === status) && (office === 'all' || expandedOfficeName(item.office) === office) && (province === 'all' || item.province === province)
   }), [users, search, status, office, province])
   const columns = useMemo<ColumnDef<Registrant>[]>(() => [
     { accessorKey: 'fullName', header: 'Registrant', cell: ({ row }) => <div className="registrant-cell"><Avatar user={row.original} compact /><span><strong>{row.original.fullName}</strong><small>{row.original.email}</small></span></div> },
