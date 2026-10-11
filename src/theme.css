@@ -158,13 +158,18 @@ button:disabled { cursor: not-allowed; opacity: .55; }
 .panel-heading .eyebrow, .registry-heading .eyebrow, .profile-sheet-heading .eyebrow { margin: 0 0 5px; }
 .panel-heading h2, .registry-heading h2, .profile-sheet-heading h2 { margin: 0; color: var(--ink); font-family: var(--display); font-size: 16px; font-weight: 600; }
 .panel-unit { color: #8c8e82; font-size: 8px; font-weight: 700; letter-spacing: 1px; }
-.chart-wrap { width: 100%; height: 187px; }
+.chart-wrap { display: flex; width: 100%; height: 187px; flex-direction: column; justify-content: center; gap: 13px; }
+.province-bar-row { display: grid; grid-template-columns: minmax(95px, .9fr) minmax(0, 1.5fr) 24px; align-items: center; gap: 9px; color: #6b716b; font-size: 10px; }
+.province-bar-row strong { color: #344137; font-family: var(--display); font-size: 11px; text-align: right; }
+.province-bar-track { height: 12px; overflow: hidden; background: #f0eee5; }
+.province-bar-track span { display: block; height: 100%; background: var(--sun); }
 .chart-empty { display: grid; height: 187px; place-items: center; color: #85897e; font-size: 11px; }
 .status-chart-layout { display: grid; min-height: 184px; grid-template-columns: minmax(130px, 1fr) minmax(120px, .8fr); align-items: center; gap: 4px; }
-.donut-wrap { position: relative; width: 100%; height: 174px; }
-.donut-total { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none; }
-.donut-total strong { color: #24362a; font-family: var(--display); font-size: 25px; }
-.donut-total small, .donut-empty small { color: #868a7e; font-size: 9px; }
+.donut-wrap { display: grid; width: 100%; height: 174px; place-items: center; }
+.donut-chart { display: grid; width: 130px; height: 130px; place-items: center; border-radius: 50%; }
+.donut-center { display: flex; width: 72%; height: 72%; flex-direction: column; align-items: center; justify-content: center; border-radius: 50%; background: var(--paper); }
+.donut-center strong { color: #24362a; font-family: var(--display); font-size: 25px; }
+.donut-center small, .donut-empty small { color: #868a7e; font-size: 9px; }
 .donut-empty { display: flex; width: 130px; height: 130px; flex-direction: column; align-items: center; justify-content: center; justify-self: center; border: 15px solid #ece9de; border-radius: 50%; color: #9b9b8d; }
 .donut-empty strong { font-family: var(--display); font-size: 21px; }
 .legend-list { display: flex; flex-direction: column; gap: 11px; }
