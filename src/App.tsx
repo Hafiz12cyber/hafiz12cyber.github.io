@@ -83,7 +83,7 @@ function AuthScreen({ onSignedIn }: { onSignedIn: (token: string, user: User) =>
   return <main className="auth-layout">
     <aside className="auth-brand-panel"><Brand light /><div className="brand-copy"><p className="brand-wordmark">Field data.<br /><em>Regional</em><br />perspective.</p><div className="brand-rule" /><p className="brand-description">Agricultural Statistics<br />Caraga Region</p></div><div className="brand-coordinates"><span>CARAGA</span><span>08° 48′ N · 125° 54′ E</span></div></aside>
     <section className="auth-content"><div className="auth-mobile-brand"><Brand /></div><div className="auth-form-wrap">
-      <div className="auth-heading"><p className="eyebrow">CARAGA REGIONAL DATA PORTAL</p><h1>AgriStat <span>Caraga</span></h1><p>Sign in to continue to your workspace.</p></div>
+      <div className="auth-heading"><p className="eyebrow">CARAGA REGIONAL DATA PORTAL</p><h1>AgriStat <span>Caraga</span></h1><div className="auth-heading-logo"><Brand /></div><p>Sign in to continue to your workspace.</p></div>
       <Tabs.Root value={tab} onValueChange={setTab} className="auth-tabs"><Tabs.List className="auth-tab-list" aria-label="Account access"><Tabs.Trigger value="login">Sign in</Tabs.Trigger><Tabs.Trigger value="register">Register</Tabs.Trigger></Tabs.List>
         <Tabs.Content value="login" className="auth-tab-content"><form className="form-stack" onSubmit={(event: FormEvent<HTMLFormElement>) => { event.preventDefault(); loginMutation.mutate() }}>
           <TextField label="Username" autoComplete="username" placeholder="Enter your username" value={login.identifier} onChange={(event) => setLogin({ ...login, identifier: event.target.value })} required />

@@ -49,6 +49,7 @@ button:disabled { cursor: not-allowed; opacity: .55; }
 .auth-mobile-brand { display: none; }
 .auth-form-wrap { width: min(100%, 470px); margin: auto 0; }
 .auth-heading { margin-bottom: 28px; }
+.auth-heading-logo { display: none; }
 .auth-heading .eyebrow { margin: 0 0 9px; color: #738071; }
 .auth-heading h1 { margin: 0; color: var(--ink); font-family: var(--sans); font-size: 36px; font-weight: 600; line-height: 1.15; }
 .auth-heading h1 span { color: #8a8e82; font-weight: 400; }
@@ -284,8 +285,9 @@ button:disabled { cursor: not-allowed; opacity: .55; }
   .auth-layout { display: block; }
   .auth-brand-panel { display: none; }
   .auth-content { min-height: 100vh; justify-content: flex-start; padding: 23px 24px 18px; }
-  .auth-mobile-brand { display: block; width: min(100%, 470px); margin-bottom: 35px; }
-  .auth-mobile-brand .brand-stamp img { width: 154px; }
+  .auth-mobile-brand { display: none; }
+  .auth-heading h1 { display: none; }
+  .auth-heading-logo { display: block; margin: 0 0 9px; }
   .auth-form-wrap { margin: auto 0; }
   .auth-footer { margin-top: 30px; }
   .app-sidebar { z-index: 35; width: 258px; transform: translateX(-102%); transition: transform .22s ease; }
