@@ -62,7 +62,7 @@ function SelectField({ label, children, ...props }: SelectHTMLAttributes<HTMLSel
 }
 
 function Brand({ light = false }: { light?: boolean }) {
-  return <div className={`brand-stamp${light ? ' brand-stamp-light' : ''}`}><img src={light ? logoWhite : logoColor} alt="AgriStat Caraga" /><span>REGIONAL AGRICULTURAL STATISTICS</span></div>
+  return <div className={`brand-stamp${light ? ' brand-stamp-light' : ''}`}><img src={light ? logoWhite : logoColor} alt="AgriStat Caraga" /></div>
 }
 
 function AuthScreen({ onSignedIn }: { onSignedIn: (token: string, user: User) => void }) {
