@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type FormEvent, type InputHTMLAttributes, type SelectHTMLAttributes } from 'react'
+import { useEffect, useId, useMemo, useRef, useState, type FormEvent, type InputHTMLAttributes, type SelectHTMLAttributes } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { ArrowDownUp, ArrowRight, BadgeCheck, Check, ChevronDown, ChevronLeft, ChevronRight, Clipboard, Eye, EyeOff, FileSpreadsheet, Leaf, LogOut, Menu, Search, ShieldCheck, UserRound, UsersRound, X } from 'lucide-react'
@@ -72,10 +72,11 @@ function AuthScreen({ onSignedIn }: { onSignedIn: (token: string, user: User) =>
   </main>
 }
 
-function Avatar({ user, large = false }: { user: User; large?: boolean }) {
-  const photo = useQuery({ queryKey: ['profile-photo', user.id], queryFn: () => api.photo(`/profile/photo/${user.id}`), enabled: user.hasPhoto, staleTime: 60_000 })
+function Avatar({ user, large = false, compact = false }: { user: User; large?: boolean; compact?: boolean }) {
+  const instanceId = useId()
+  const photo = useQuery({ queryKey: ['profile-photo', user.id, instanceId], queryFn: () => api.photo(`/profile/photo/${user.id}`), enabled: user.hasPhoto, staleTime: 60_000 })
   useEffect(() => () => { if (photo.data) URL.revokeObjectURL(photo.data) }, [photo.data])
-  return <span className={`user-avatar${large ? ' user-avatar-large' : ''}`}>{photo.data ? <img src={photo.data} alt={`${user.firstName} ${user.lastName}`} /> : `${user.firstName[0] ?? ''}${user.lastName[0] ?? ''}`.toUpperCase()}</span>
+  return <span className={`user-avatar${large ? ' user-avatar-large' : ''}${compact ? ' registrant-avatar' : ''}`}>{photo.data ? <img src={photo.data} alt={`${user.firstName} ${user.lastName}`} /> : `${user.firstName[0] ?? ''}${user.lastName[0] ?? ''}`.toUpperCase()}</span>
 }
 
 function Metric({ label, value, detail, icon: Icon, accent = false }: { label: string; value: number; detail: string; icon: LucideIcon; accent?: boolean }) {
@@ -106,7 +107,7 @@ function AdminDashboard({ user, notify }: { user: User; notify: (text: string) =
     return match && (status === 'all' || item.status === status) && (office === 'all' || item.office === office) && (province === 'all' || item.province === province)
   })
   const columns = useMemo<ColumnDef<Registrant>[]>(() => [
-    { accessorKey: 'fullName', header: 'Registrant', cell: ({ row }) => <div className="registrant-cell"><span className="registrant-avatar">{row.original.fullName.split(' ').map((part) => part[0]).slice(0, 2).join('').toUpperCase()}</span><span><strong>{row.original.fullName}</strong><small>{row.original.email}</small></span></div> },
+    { accessorKey: 'fullName', header: 'Registrant', cell: ({ row }) => <div className="registrant-cell"><Avatar user={row.original} compact /><span><strong>{row.original.fullName}</strong><small>{row.original.email}</small></span></div> },
     { accessorKey: 'username', header: 'Account', cell: ({ row }) => <div className="account-cell"><strong>{row.original.username}</strong><span className="password-cell">{row.original.initialPassword ? <><span>{revealedRef.current.has(row.original.id) ? row.original.initialPassword : '••••••••••••'}</span><button className="icon-button mini-icon" type="button" title="Toggle password visibility" aria-label="Toggle password visibility" onClick={() => setRevealed((current) => { const next = new Set(current); if (next.has(row.original.id)) next.delete(row.original.id); else next.add(row.original.id); return next })}>{revealedRef.current.has(row.original.id) ? <EyeOff size={13} /> : <Eye size={13} />}</button><button className="icon-button mini-icon" type="button" title="Copy temporary password" aria-label="Copy temporary password" onClick={() => { void navigator.clipboard.writeText(row.original.initialPassword ?? ''); notify('Temporary password copied.') }}><Clipboard size={13} /></button></> : <span className="muted">Password changed</span>}</span></div> },
     { accessorKey: 'designation', header: 'Office / designation', cell: ({ row }) => <div className="designation-cell"><strong>{row.original.office}</strong><small>{row.original.designation}</small></div> },
     { accessorKey: 'status', header: 'Review', cell: ({ row }) => <span className={`status-pill status-${row.original.status}`}>{row.original.status}</span> },
