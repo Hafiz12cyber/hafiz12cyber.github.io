@@ -17,3 +17,11 @@ export const offices: Office[] = [
   { name: 'Regional Coordination and Management Office', abbreviation: 'rcmo', scope: 'designated', options: ['Data Analyst', 'Budget Officer', 'Team Lead'] },
   { name: 'Department of Agriculture', abbreviation: 'da', scope: 'designated', options: ['Regional AgriStat Focal Person', 'Regional AgriStat Alternate Focal Person'] },
 ]
+
+export function abbreviatedDesignation(officeName: string, designation: string) {
+  const prefix = `${officeName} - `
+  if (!designation.startsWith(prefix)) return designation
+
+  const abbreviation = offices.find((office) => office.name === officeName)?.abbreviation.toUpperCase()
+  return abbreviation ? `${abbreviation} - ${designation.slice(prefix.length)}` : designation
+}

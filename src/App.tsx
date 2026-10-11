@@ -7,7 +7,7 @@ import { flexRender, getCoreRowModel, getPaginationRowModel, getSortedRowModel, 
 import logoColor from '../agristat-caraga-logo-final.png'
 import logoWhite from '../agristat-caraga-logo-white-text.png'
 import { api, ApiError, type Registrant, type User } from './lib/api'
-import { municipalitiesByProvince, offices, provinces } from './lib/caraga'
+import { abbreviatedDesignation, municipalitiesByProvince, offices, provinces } from './lib/caraga'
 
 type Registration = { firstName: string; middleName: string; lastName: string; suffix: string; position: string; office: string; province: string; municipality: string; designated: string; email: string }
 const emptyRegistration: Registration = { firstName: '', middleName: '', lastName: '', suffix: '', position: '', office: '', province: '', municipality: '', designated: '', email: '' }
@@ -143,7 +143,7 @@ function AdminDashboard({ user, notify }: { user: User; notify: (text: string) =
   const columns = useMemo<ColumnDef<Registrant>[]>(() => [
     { accessorKey: 'fullName', header: 'Registrant', cell: ({ row }) => <div className="registrant-cell"><Avatar user={row.original} compact /><span><strong>{row.original.fullName}</strong><small>{row.original.email}</small></span></div> },
     { accessorKey: 'username', header: 'Account', cell: ({ row }) => <div className="account-cell"><strong>{row.original.username}</strong><span className="password-cell">{row.original.initialPassword ? <><span>••••••••••••</span><button className="icon-button mini-icon" type="button" title="Copy temporary password" aria-label="Copy temporary password" onClick={() => { void copyText(row.original.initialPassword ?? '').then((copied) => notify(copied ? 'Temporary password copied.' : 'Could not copy password. Please select and copy it manually.')) }}><Copy size={13} /></button></> : <span className="muted">Password changed</span>}</span></div> },
-    { accessorKey: 'designation', header: 'Office / designation', cell: ({ row }) => <div className="designation-cell"><strong>{row.original.office}</strong><small>{row.original.designation}</small></div> },
+    { accessorKey: 'designation', header: 'Office / designation', cell: ({ row }) => <div className="designation-cell"><strong>{row.original.office}</strong><small>{abbreviatedDesignation(row.original.office, row.original.designation)}</small></div> },
     { accessorKey: 'status', header: 'Review', cell: ({ row }) => <span className={`status-pill status-${row.original.status}`}>{row.original.status}</span> },
     { accessorKey: 'role', header: 'Role', cell: ({ row }) => <select className="table-select role-select" aria-label={`Role for ${row.original.fullName}`} value={row.original.role} disabled={row.original.id === user.id || updateMutationRef.current.isPending} onChange={(event) => updateMutationRef.current.mutate({ id: row.original.id, action: 'role', value: event.target.value })}><option value="admin">Admin</option><option value="super_admin">Super Admin</option></select> },
     { accessorKey: 'createdAt', header: 'Submitted', cell: ({ row }) => new Intl.DateTimeFormat('en-PH', { dateStyle: 'medium' }).format(new Date(row.original.createdAt)) },
