@@ -287,7 +287,8 @@ button:disabled { cursor: not-allowed; opacity: .55; }
   .auth-content { min-height: 100vh; justify-content: flex-start; padding: 23px 24px 18px; }
   .auth-mobile-brand { display: none; }
   .auth-heading h1 { display: none; }
-  .auth-heading-logo { display: block; margin: 0 0 9px; }
+  .auth-heading-logo { display: block; height: 38px; overflow: hidden; margin: 0 0 9px; }
+  .auth-heading-logo .brand-stamp img { transform: translateY(-42%); }
   .auth-form-wrap { margin: auto 0; }
   .auth-footer { margin-top: 30px; }
   .app-sidebar { z-index: 35; width: 258px; transform: translateX(-102%); transition: transform .22s ease; }
