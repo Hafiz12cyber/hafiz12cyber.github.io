@@ -30,6 +30,7 @@ export const api = {
   get<T>(path: string) { return request<T>(path) },
   post<T = void>(path: string, body?: unknown) { return request<T>(path, { method: 'POST', body: body instanceof FormData ? body : JSON.stringify(body ?? {}) }) },
   patch<T = void>(path: string, body: unknown) { return request<T>(path, { method: 'PATCH', body: JSON.stringify(body) }) },
+  delete<T = void>(path: string) { return request<T>(path, { method: 'DELETE' }) },
   async photo(path: string) {
     const token = localStorage.getItem('agristat-session')
     const response = await fetch(`${apiBase}${path}`, { headers: token ? { Authorization: `Bearer ${token}` } : {} })

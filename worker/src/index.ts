@@ -53,7 +53,7 @@ function corsHeaders(request: Request, env: Env) {
   const localOrigins = ['http://localhost:5173', 'http://127.0.0.1:5173']
   const allowed = origin && (origin === env.APP_ORIGIN || (env.ENVIRONMENT === 'development' && localOrigins.includes(origin)))
   if (origin && !allowed) throw new HttpError(403, 'This origin is not allowed to access the AgriStat API.')
-  const headers = new Headers({ Vary: 'Origin', 'Access-Control-Allow-Methods': 'GET,POST,PATCH,OPTIONS', 'Access-Control-Allow-Headers': 'Authorization,Content-Type,Accept', 'Access-Control-Max-Age': '86400' })
+  const headers = new Headers({ Vary: 'Origin', 'Access-Control-Allow-Methods': 'GET,POST,PATCH,DELETE,OPTIONS', 'Access-Control-Allow-Headers': 'Authorization,Content-Type,Accept', 'Access-Control-Max-Age': '86400' })
   if (origin && allowed) headers.set('Access-Control-Allow-Origin', origin)
   return headers
 }
@@ -149,7 +149,7 @@ async function sessionUser(request: Request, env: Env): Promise<SessionUser> {
   if (user.status !== 'approved') throw new HttpError(403, 'This account is not approved for access.')
   return user
 }
-function requireSuperAdmin(user: UserRow) { if (user.role !== 'super_admin') throw new HttpError(403, 'Only a Super Admin can manage registrations.') }
+function requireSuperAdmin(user: UserRow) { if (user.role !== 'super_admin') throw new HttpError(403, 'Only a Super Admin can manage accounts.') }
 
 async function register(request: Request, env: Env) {
   const body = await readJson<RegistrationBody>(request)
@@ -229,6 +229,21 @@ async function updateRole(id: string, request: Request, env: Env, actor: UserRow
   await env.DB.prepare('UPDATE users SET role = ?, updated_at = ? WHERE id = ?').bind(body.role, new Date().toISOString(), id).run()
   return json({ ok: true })
 }
+async function deleteUser(id: string, env: Env, actor: UserRow) {
+  if (id === actor.id) throw new HttpError(409, 'You cannot delete your own account.')
+  const target = await env.DB.prepare('SELECT id, role, profile_photo_key FROM users WHERE id = ?').bind(id).first<{ id: string; role: string; profile_photo_key: string | null }>()
+  if (!target) throw new HttpError(404, 'Account not found.')
+  const result = await env.DB.prepare("DELETE FROM users WHERE id = ? AND (role != 'super_admin' OR EXISTS (SELECT 1 FROM users WHERE role = 'super_admin' AND id != ?))").bind(id, id).run()
+  if (!result.meta.changes) {
+    if (!await env.DB.prepare('SELECT id FROM users WHERE id = ?').bind(id).first<{ id: string }>()) throw new HttpError(404, 'Account not found.')
+    throw new HttpError(409, 'The last Super Admin account cannot be deleted.')
+  }
+  if (target.profile_photo_key) {
+    try { await env.PROFILE_PHOTOS.delete(target.profile_photo_key) }
+    catch (error) { console.error('Could not remove the deleted account profile photo:', error) }
+  }
+  return json({ ok: true })
+}
 
 function imageMatches(type: string, bytes: Uint8Array) {
   if (type === 'image/png') return bytes.length > 8 && bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47
@@ -285,6 +300,8 @@ async function route(request: Request, env: Env) {
   const user = await sessionUser(request, env)
   if (method === 'GET' && path === '/api/auth/me') return json({ user: publicUser(user) })
   if (method === 'GET' && path === '/api/admin/users') { requireSuperAdmin(user); return adminUsers(env) }
+  const deleteMatch = path.match(/^\/api\/admin\/users\/([\w-]+)$/u)
+  if (method === 'DELETE' && deleteMatch) { requireSuperAdmin(user); return deleteUser(deleteMatch[1], env, user) }
   const statusMatch = path.match(/^\/api\/admin\/users\/([\w-]+)\/status$/u)
   if (method === 'PATCH' && statusMatch) { requireSuperAdmin(user); return updateStatus(statusMatch[1], request, env) }
   const roleMatch = path.match(/^\/api\/admin\/users\/([\w-]+)\/role$/u)

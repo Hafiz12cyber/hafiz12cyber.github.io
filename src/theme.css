@@ -216,6 +216,8 @@ button:disabled { cursor: not-allowed; opacity: .55; }
 .review-action { display: inline-flex; min-height: 27px; align-items: center; gap: 4px; border: 1px solid #d8e5d7; border-radius: 2px; padding: 0 6px; color: #2d6948; background: #f2f8ed; cursor: pointer; font-size: 9px; font-weight: 700; white-space: nowrap; }
 .review-action:hover:not(:disabled) { background: #e8f2e3; }
 .reject-action { justify-content: center; border-color: #ecd6cf; padding: 0 7px; color: #a04f41; background: #fbf2ed; }
+.delete-action { justify-content: center; border-color: #e8c9c2; padding: 0 7px; color: #a34032; background: #fbefeb; }
+.delete-action:hover:not(:disabled) { background: #f8e1d9; }
 .table-empty { height: 90px !important; color: #85897e !important; text-align: center; }
 .table-footer { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; color: #7a8075; font-size: 10px; }
 .table-footer > div { display: flex; gap: 5px; }
