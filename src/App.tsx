@@ -1,6 +1,6 @@
 import { useEffect, useId, useMemo, useRef, useState, type FormEvent, type InputHTMLAttributes, type SelectHTMLAttributes } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ArrowDownUp, ArrowRight, BadgeCheck, Check, ChevronDown, ChevronLeft, ChevronRight, Copy, FileSpreadsheet, Leaf, LogOut, Menu, Search, ShieldCheck, UserRound, UsersRound, X } from 'lucide-react'
+import { ArrowDownUp, ArrowRight, BadgeCheck, Check, ChevronDown, ChevronLeft, ChevronRight, Copy, Eye, EyeOff, FileSpreadsheet, Leaf, LogOut, Menu, Search, ShieldCheck, UserRound, UsersRound, X } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import * as Tabs from '@radix-ui/react-tabs'
 import { flexRender, getCoreRowModel, getPaginationRowModel, getSortedRowModel, useReactTable, type ColumnDef, type SortingState } from '@tanstack/react-table'
@@ -65,6 +65,7 @@ function Brand({ light = false }: { light?: boolean }) {
 
 function AuthScreen({ onSignedIn }: { onSignedIn: (token: string, user: User) => void }) {
   const [login, setLogin] = useState({ identifier: '', password: '' })
+  const [showLoginPassword, setShowLoginPassword] = useState(false)
   const [form, setForm] = useState(emptyRegistration)
   const [issued, setIssued] = useState<{ username: string; password: string } | null>(null)
   const [tab, setTab] = useState('login')
@@ -74,18 +75,16 @@ function AuthScreen({ onSignedIn }: { onSignedIn: (token: string, user: User) =>
   const hasProvince = selectedOffice?.scope === 'province' || selectedOffice?.scope === 'municipality'
   const hasMunicipality = selectedOffice?.scope === 'municipality'
   const hasDesignated = selectedOffice?.scope === 'designated'
-  const location = hasMunicipality ? `${form.municipality}, ${form.province}` : form.province
-  const designation = selectedOffice ? `${selectedOffice.name} - ${hasDesignated ? form.designated : location}` : 'Choose an office to preview designation'
   function update<K extends keyof Registration>(key: K, value: Registration[K]) { setForm((current) => ({ ...current, [key]: value })) }
 
   return <main className="auth-layout">
     <aside className="auth-brand-panel"><Brand light /><div className="brand-copy"><div className="brand-kicker"><span /> REGION XIII / PHILIPPINES</div><p className="brand-wordmark">Field data.<br /><em>Regional</em><br />perspective.</p><div className="brand-rule" /><p className="brand-description">Agricultural Statistics<br />Caraga Region</p></div><div className="brand-coordinates"><span>CARAGA</span><span>08° 48′ N · 125° 54′ E</span></div></aside>
     <section className="auth-content"><div className="auth-mobile-brand"><Brand /></div><div className="auth-form-wrap">
-      <div className="auth-heading"><p className="eyebrow">CARAGA REGIONAL DATA PORTAL</p><h1>AgriStat <span>Caraga</span></h1><p>Sign in to continue to your regional workspace.</p></div>
+      <div className="auth-heading"><p className="eyebrow">CARAGA REGIONAL DATA PORTAL</p><h1>AgriStat <span>Caraga</span></h1><p>Sign in to continue to your workspace.</p></div>
       <Tabs.Root value={tab} onValueChange={setTab} className="auth-tabs"><Tabs.List className="auth-tab-list" aria-label="Account access"><Tabs.Trigger value="login">Sign in</Tabs.Trigger><Tabs.Trigger value="register">Register</Tabs.Trigger></Tabs.List>
         <Tabs.Content value="login" className="auth-tab-content"><form className="form-stack" onSubmit={(event: FormEvent<HTMLFormElement>) => { event.preventDefault(); loginMutation.mutate() }}>
-          <TextField label="Email or username" autoComplete="username" placeholder="name@agency.gov.ph" value={login.identifier} onChange={(event) => setLogin({ ...login, identifier: event.target.value })} required />
-          <TextField label="Password" type="password" autoComplete="current-password" placeholder="Enter your password" value={login.password} onChange={(event) => setLogin({ ...login, password: event.target.value })} required />
+          <TextField label="Username" autoComplete="username" placeholder="Enter your username" value={login.identifier} onChange={(event) => setLogin({ ...login, identifier: event.target.value })} required />
+          <label className="field"><span>Password</span><span className="password-input-wrap"><input type={showLoginPassword ? 'text' : 'password'} autoComplete="current-password" placeholder="Enter your password" value={login.password} onChange={(event) => setLogin({ ...login, password: event.target.value })} required /><button className="password-visibility-toggle" type="button" aria-label={showLoginPassword ? 'Hide password' : 'Show password'} title={showLoginPassword ? 'Hide password' : 'Show password'} onClick={() => setShowLoginPassword((visible) => !visible)}>{showLoginPassword ? <EyeOff size={17} /> : <Eye size={17} />}</button></span></label>
           {loginMutation.error && <p className="form-alert" role="alert">{errorText(loginMutation.error)}</p>}
           <button className="button button-primary button-full" type="submit" disabled={loginMutation.isPending}>{loginMutation.isPending ? 'Signing in…' : 'Sign in'}<ArrowRight size={17} /></button>
         </form><div className="auth-note"><ShieldCheck size={16} /> Access is available after account approval.</div></Tabs.Content>
@@ -99,10 +98,9 @@ function AuthScreen({ onSignedIn }: { onSignedIn: (token: string, user: User) =>
             {hasProvince && <SelectField label="Province" value={form.province} onChange={(event) => setForm((current) => ({ ...current, province: event.target.value, municipality: '' }))} required><option value="">Select province</option>{provinces.map((province) => <option key={province}>{province}</option>)}</SelectField>}
             {hasMunicipality && <SelectField label="Municipality" value={form.municipality} onChange={(event) => update('municipality', event.target.value)} required disabled={!form.province}><option value="">Select municipality</option>{(municipalitiesByProvince[form.province] ?? []).map((municipality) => <option key={municipality}>{municipality}</option>)}</SelectField>}
             {hasDesignated && <SelectField label="Designated role" value={form.designated} onChange={(event) => update('designated', event.target.value)} required><option value="">Select designation</option>{selectedOffice?.options?.map((item) => <option key={item}>{item}</option>)}</SelectField>}
-            <div className="designation-preview"><span>FINAL DESIGNATION</span><strong>{designation}</strong></div>
             <div className="form-section-label"><span>03</span> CONTACT</div><TextField label="Work email" type="email" autoComplete="email" placeholder="name@agency.gov.ph" value={form.email} onChange={(event) => update('email', event.target.value)} required />
             {registerMutation.error && <p className="form-alert" role="alert">{errorText(registerMutation.error)}</p>}
-            <button className="button button-primary button-full" type="submit" disabled={registerMutation.isPending}>{registerMutation.isPending ? 'Submitting request…' : 'Submit registration'}<ArrowRight size={17} /></button><p className="form-legal">Your details are reviewed by the AgriStat Caraga Super Admin before access is granted.</p>
+            <button className="button button-primary button-full" type="submit" disabled={registerMutation.isPending}>{registerMutation.isPending ? 'Submitting request…' : 'Register'}<ArrowRight size={17} /></button>
           </form>}</Tabs.Content>
       </Tabs.Root>
     </div><footer className="auth-footer"><span>AGRICULTURAL STATISTICS — CARAGA</span><span>REGION XIII</span></footer></section>
