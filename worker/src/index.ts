@@ -177,7 +177,7 @@ async function register(request: Request, env: Env) {
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/u.test(email)) throw new HttpError(400, 'Enter a valid email address.')
   if (await env.DB.prepare('SELECT id FROM users WHERE email = ? COLLATE NOCASE LIMIT 1').bind(email).first<{ id: string }>()) throw new HttpError(409, 'An account with this email address already exists.')
   const location = selected.scope === 'municipality' ? `${municipality}, ${province}` : province
-  const designation = `${office} - ${selected.scope === 'designated' ? designated : location}`
+  const designation = `${selected.abbreviation.toUpperCase()} - ${selected.scope === 'designated' ? designated : location}`
   const base = registrationUsername(selected.abbreviation, province, municipality, lastName)
   let username = base
   for (let number = 2; await env.DB.prepare('SELECT id FROM users WHERE username = ? COLLATE NOCASE LIMIT 1').bind(username).first<{ id: string }>(); number += 1) username = `${base}${number}`

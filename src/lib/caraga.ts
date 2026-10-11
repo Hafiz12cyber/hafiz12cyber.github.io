@@ -22,10 +22,10 @@ export function expandedOfficeName(officeValue: string) {
   return offices.find((office) => office.name === officeValue || office.abbreviation.toLowerCase() === officeValue.toLowerCase())?.name ?? officeValue
 }
 
-export function expandedDesignation(officeValue: string, designation: string) {
-  const officeName = expandedOfficeName(officeValue)
-  const prefix = `${officeValue} - `
-  const fullPrefix = `${officeName} - `
-  const remainder = designation.startsWith(prefix) ? designation.slice(prefix.length) : designation.startsWith(fullPrefix) ? designation.slice(fullPrefix.length) : null
-  return remainder === null ? designation : `${officeName} - ${remainder}`
+export function abbreviatedDesignation(officeValue: string, designation: string) {
+  const office = offices.find((item) => item.name === officeValue || item.abbreviation.toLowerCase() === officeValue.toLowerCase())
+  if (!office) return designation
+  const prefixes = [office.name, office.abbreviation, office.abbreviation.toUpperCase()].map((value) => `${value} - `)
+  const prefix = prefixes.find((value) => designation.startsWith(value))
+  return prefix ? `${office.abbreviation.toUpperCase()} - ${designation.slice(prefix.length)}` : designation
 }
