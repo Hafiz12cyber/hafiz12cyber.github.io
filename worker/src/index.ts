@@ -115,6 +115,12 @@ function generatedPassword() {
   return Array.from(crypto.getRandomValues(new Uint8Array(16)), (byte) => alphabet[byte % alphabet.length]).join('')
 }
 function slug(value: string) { return value.normalize('NFKD').replace(/[\u0300-\u036f]/gu, '').toLowerCase().replace(/[^a-z0-9]+/gu, '.').replace(/^\.+|\.+$/gu, '') || 'user' }
+function registrationUsername(office: string, province: string, municipality: string, lastName: string) {
+  const surname = slug(lastName)
+  if (office === 'mao') return `mao-${slug(municipality)}.${surname}`
+  if (office === 'apco' || office === 'pao' || office === 'pcmo') return `${office}-${slug(province)}.${surname}`
+  return `${office}.${surname}`
+}
 function fullName(user: UserRow) { return [user.first_name, user.middle_name, user.last_name].filter(Boolean).join(' ') + (user.suffix ? `, ${user.suffix}` : '') }
 function publicUser(user: UserRow) {
   return { id: user.id, firstName: user.first_name, middleName: user.middle_name, lastName: user.last_name, suffix: user.suffix, position: user.position, office: user.office, province: user.province, municipality: user.municipality, designated: user.designated, designation: user.designation, email: user.email, username: user.username, role: user.role, status: user.status, hasPhoto: Boolean(user.profile_photo_key), mustChangePassword: Boolean(user.initial_password_encrypted) }
@@ -172,7 +178,7 @@ async function register(request: Request, env: Env) {
   if (await env.DB.prepare('SELECT id FROM users WHERE email = ? COLLATE NOCASE LIMIT 1').bind(email).first<{ id: string }>()) throw new HttpError(409, 'An account with this email address already exists.')
   const location = selected.scope === 'municipality' ? `${municipality}, ${province}` : province
   const designation = `${office} - ${selected.scope === 'designated' ? designated : location}`
-  const base = `${selected.abbreviation}.${slug(lastName)}`
+  const base = registrationUsername(selected.abbreviation, province, municipality, lastName)
   let username = base
   for (let number = 2; await env.DB.prepare('SELECT id FROM users WHERE username = ? COLLATE NOCASE LIMIT 1').bind(username).first<{ id: string }>(); number += 1) username = `${base}${number}`
   const initialPassword = generatedPassword()
