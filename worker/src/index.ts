@@ -19,7 +19,7 @@ const offices: Office[] = [
   { name: 'Municipal Agriculture Office', abbreviation: 'mao', scope: 'municipality' },
   { name: 'Provincial Agriculture Office', abbreviation: 'pao', scope: 'province' },
   { name: 'Provincial Coordination and Management Office', abbreviation: 'pcmo', scope: 'province' },
-  { name: 'Regional Agricultural Statistics', abbreviation: 'ras', usernamePrefix: 'da', scope: 'designated', options: ['Regional Alternate Focal Person', 'Regional Focal Person'] },
+  { name: 'Regional Agricultural Statistics', abbreviation: 'ras', scope: 'designated', options: ['Regional Alternate Focal Person', 'Regional Focal Person'] },
   { name: 'Regional Coordination and Management Office', abbreviation: 'rcmo', scope: 'designated', options: ['Budget Officer', 'Data Analyst', 'Team Lead'] },
   { name: 'Rice Program', abbreviation: 'rp', scope: 'designated', options: ['Regional Rice Program Alternate Coordinator', 'Regional Rice Program Coordinator'] },
 ]
