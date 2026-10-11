@@ -1,7 +1,7 @@
 import { useEffect, useId, useMemo, useRef, useState, type FormEvent, type InputHTMLAttributes, type SelectHTMLAttributes } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
-import { ArrowDownUp, ArrowRight, BadgeCheck, Check, ChevronDown, ChevronLeft, ChevronRight, Clipboard, Eye, EyeOff, FileSpreadsheet, Leaf, LogOut, Menu, Search, ShieldCheck, UserRound, UsersRound, X } from 'lucide-react'
+import { ArrowDownUp, ArrowRight, BadgeCheck, Check, ChevronDown, ChevronLeft, ChevronRight, Copy, Eye, EyeOff, FileSpreadsheet, Leaf, LogOut, Menu, Search, ShieldCheck, UserRound, UsersRound, X } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import * as Tabs from '@radix-ui/react-tabs'
 import { flexRender, getCoreRowModel, getPaginationRowModel, getSortedRowModel, useReactTable, type ColumnDef, type SortingState } from '@tanstack/react-table'
@@ -13,6 +13,33 @@ import { municipalitiesByProvince, offices, provinces } from './lib/caraga'
 type Registration = { firstName: string; middleName: string; lastName: string; suffix: string; position: string; office: string; province: string; municipality: string; designated: string; email: string }
 const emptyRegistration: Registration = { firstName: '', middleName: '', lastName: '', suffix: '', position: '', office: '', province: '', municipality: '', designated: '', email: '' }
 const errorText = (error: unknown) => error instanceof Error ? error.message : 'Something went wrong. Please try again.'
+
+async function copyText(value: string) {
+  let field: HTMLTextAreaElement | null = null
+  try {
+    if (navigator.clipboard?.writeText) {
+      let timeout: number | undefined
+      const copied = await Promise.race([
+        navigator.clipboard.writeText(value).then(() => true, () => false),
+        new Promise<boolean>((resolve) => { timeout = window.setTimeout(() => resolve(false), 1000) }),
+      ])
+      if (timeout !== undefined) window.clearTimeout(timeout)
+      if (copied) return true
+    }
+    field = document.createElement('textarea')
+    field.value = value
+    field.setAttribute('readonly', '')
+    field.style.position = 'fixed'
+    field.style.opacity = '0'
+    document.body.append(field)
+    field.select()
+    return document.execCommand('copy')
+  } catch {
+    return false
+  } finally {
+    field?.remove()
+  }
+}
 
 function TextField({ label, ...props }: InputHTMLAttributes<HTMLInputElement> & { label: string }) {
   return <label className="field"><span>{label}</span><input {...props} /></label>
@@ -97,9 +124,7 @@ function AdminDashboard({ user, notify }: { user: User; notify: (text: string) =
     onSuccess: async (_, variables) => { await client.invalidateQueries({ queryKey: ['admin-users'] }); notify(variables.action === 'status' ? 'Account review updated.' : 'User role updated.') },
   })
   const updateMutationRef = useRef(updateMutation)
-  const revealedRef = useRef(revealed)
   updateMutationRef.current = updateMutation
-  revealedRef.current = revealed
   const users = usersQuery.data ?? []
   const filtered = users.filter((item) => {
     const term = search.trim().toLowerCase()
@@ -108,13 +133,13 @@ function AdminDashboard({ user, notify }: { user: User; notify: (text: string) =
   })
   const columns = useMemo<ColumnDef<Registrant>[]>(() => [
     { accessorKey: 'fullName', header: 'Registrant', cell: ({ row }) => <div className="registrant-cell"><Avatar user={row.original} compact /><span><strong>{row.original.fullName}</strong><small>{row.original.email}</small></span></div> },
-    { accessorKey: 'username', header: 'Account', cell: ({ row }) => <div className="account-cell"><strong>{row.original.username}</strong><span className="password-cell">{row.original.initialPassword ? <><span>{revealedRef.current.has(row.original.id) ? row.original.initialPassword : '••••••••••••'}</span><button className="icon-button mini-icon" type="button" title="Toggle password visibility" aria-label="Toggle password visibility" onClick={() => setRevealed((current) => { const next = new Set(current); if (next.has(row.original.id)) next.delete(row.original.id); else next.add(row.original.id); return next })}>{revealedRef.current.has(row.original.id) ? <EyeOff size={13} /> : <Eye size={13} />}</button><button className="icon-button mini-icon" type="button" title="Copy temporary password" aria-label="Copy temporary password" onClick={() => { void navigator.clipboard.writeText(row.original.initialPassword ?? ''); notify('Temporary password copied.') }}><Clipboard size={13} /></button></> : <span className="muted">Password changed</span>}</span></div> },
+    { accessorKey: 'username', header: 'Account', cell: ({ row }) => <div className="account-cell"><strong>{row.original.username}</strong><span className="password-cell">{row.original.initialPassword ? <><span>{revealed.has(row.original.id) ? row.original.initialPassword : '••••••••••••'}</span><button className="icon-button mini-icon" type="button" title="Toggle password visibility" aria-label="Toggle password visibility" onClick={() => setRevealed((current) => { const next = new Set(current); if (next.has(row.original.id)) next.delete(row.original.id); else next.add(row.original.id); return next })}>{revealed.has(row.original.id) ? <EyeOff size={13} /> : <Eye size={13} />}</button><button className="icon-button mini-icon" type="button" title="Copy temporary password" aria-label="Copy temporary password" onClick={() => { void copyText(row.original.initialPassword ?? '').then((copied) => notify(copied ? 'Temporary password copied.' : 'Could not copy password. Please select and copy it manually.')) }}><Copy size={13} /></button></> : <span className="muted">Password changed</span>}</span></div> },
     { accessorKey: 'designation', header: 'Office / designation', cell: ({ row }) => <div className="designation-cell"><strong>{row.original.office}</strong><small>{row.original.designation}</small></div> },
     { accessorKey: 'status', header: 'Review', cell: ({ row }) => <span className={`status-pill status-${row.original.status}`}>{row.original.status}</span> },
     { accessorKey: 'role', header: 'Role', cell: ({ row }) => <select className="table-select role-select" aria-label={`Role for ${row.original.fullName}`} value={row.original.role} disabled={row.original.id === user.id || updateMutationRef.current.isPending} onChange={(event) => updateMutationRef.current.mutate({ id: row.original.id, action: 'role', value: event.target.value })}><option value="admin">Admin</option><option value="super_admin">Super Admin</option></select> },
     { accessorKey: 'createdAt', header: 'Submitted', cell: ({ row }) => new Intl.DateTimeFormat('en-PH', { dateStyle: 'medium' }).format(new Date(row.original.createdAt)) },
     { id: 'actions', header: 'Review action', cell: ({ row }) => row.original.id === user.id ? <span className="muted">Current account</span> : <div className="row-actions"><button type="button" className="review-action approve-action" aria-label={`Approve ${row.original.fullName}`} disabled={updateMutationRef.current.isPending || row.original.status === 'approved'} onClick={() => updateMutationRef.current.mutate({ id: row.original.id, action: 'status', value: 'approved' })}><Check size={14} /> Approve</button><button type="button" className="review-action reject-action" title="Disapprove account" aria-label={`Disapprove ${row.original.fullName}`} disabled={updateMutationRef.current.isPending || row.original.status === 'rejected'} onClick={() => updateMutationRef.current.mutate({ id: row.original.id, action: 'status', value: 'rejected' })}><X size={14} /></button></div> },
-  ], [notify, user.id])
+  ], [notify, revealed, user.id])
   const table = useReactTable({ data: filtered, columns, state: { sorting }, onSortingChange: setSorting, getCoreRowModel: getCoreRowModel(), getSortedRowModel: getSortedRowModel(), getPaginationRowModel: getPaginationRowModel(), initialState: { pagination: { pageSize: 8 } } })
   const pending = users.filter((item) => item.status === 'pending').length
   const approved = users.filter((item) => item.status === 'approved').length
