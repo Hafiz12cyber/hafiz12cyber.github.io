@@ -193,7 +193,7 @@ async function login(request: Request, env: Env) {
   const password = required(body.password, 'Password', 200)
   const user = await env.DB.prepare('SELECT * FROM users WHERE email = ? COLLATE NOCASE OR username = ? COLLATE NOCASE LIMIT 1').bind(identifier, identifier).first<UserRow>()
   if (!user || !(await verifyPassword(password, user))) throw new HttpError(401, 'Username or password is incorrect.')
-  if (user.status === 'pending') throw new HttpError(403, 'Your account is awaiting Super Admin approval.')
+  if (user.status === 'pending') throw new HttpError(403, 'Your account is awaiting approval.')
   if (user.status === 'rejected') throw new HttpError(403, 'This registration was disapproved. Contact the AgriStat Super Admin.')
   const token = randomBase64Url(32)
   const now = new Date().toISOString()
