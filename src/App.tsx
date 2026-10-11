@@ -2,7 +2,7 @@ import { useEffect, useId, useMemo, useRef, useState, type FormEvent, type Input
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ArrowDownUp, ArrowRight, BadgeCheck, Check, ChevronDown, ChevronLeft, ChevronRight, Copy, Eye, EyeOff, FileSpreadsheet, Leaf, LogOut, Menu, Search, ShieldCheck, Trash2, UserRound, UsersRound, X } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
-import * as Dialog from '@radix-ui/react-dialog'
+import { createPortal } from 'react-dom'
 import * as Tabs from '@radix-ui/react-tabs'
 import { flexRender, getCoreRowModel, getPaginationRowModel, getSortedRowModel, useReactTable, type ColumnDef, type SortingState } from '@tanstack/react-table'
 import logoColor from '../agristat-caraga-logo-final.png'
@@ -127,6 +127,7 @@ function AdminDashboard({ user, notify }: { user: User; notify: (text: string) =
   const [province, setProvince] = useState('all')
   const [sorting, setSorting] = useState<SortingState>([{ id: 'createdAt', desc: true }])
   const [deleteTarget, setDeleteTarget] = useState<Registrant | null>(null)
+  const [deleteError, setDeleteError] = useState('')
   const usersQuery = useQuery({ queryKey: ['admin-users'], queryFn: () => api.get<{ users: Registrant[] }>('/admin/users').then((result) => result.users) })
   const updateMutation = useMutation({
     mutationFn: ({ id, action, value }: { id: string; action: 'status' | 'role'; value: string }) => api.patch(`/admin/users/${id}/${action}`, { [action]: value }),
@@ -134,12 +135,23 @@ function AdminDashboard({ user, notify }: { user: User; notify: (text: string) =
   })
   const deleteMutation = useMutation({
     mutationFn: (id: string) => api.delete(`/admin/users/${id}`),
-    onSuccess: async () => { setDeleteTarget(null); await client.invalidateQueries({ queryKey: ['admin-users'] }); notify('Account deleted.') },
+    onSuccess: async () => { setDeleteTarget(null); setDeleteError(''); await client.invalidateQueries({ queryKey: ['admin-users'] }); notify('Account deleted.') },
+    onError: (error) => setDeleteError(errorText(error)),
   })
   const updateMutationRef = useRef(updateMutation)
   updateMutationRef.current = updateMutation
   const deleteMutationRef = useRef(deleteMutation)
   deleteMutationRef.current = deleteMutation
+  const deleteCancelRef = useRef<HTMLButtonElement | null>(null)
+  useEffect(() => {
+    if (!deleteTarget) return
+    deleteCancelRef.current?.focus()
+    function handleDeleteDialogKeydown(event: KeyboardEvent) {
+      if (event.key === 'Escape' && !deleteMutationRef.current.isPending) setDeleteTarget(null)
+    }
+    window.addEventListener('keydown', handleDeleteDialogKeydown)
+    return () => window.removeEventListener('keydown', handleDeleteDialogKeydown)
+  }, [deleteTarget])
   const users = usersQuery.data ?? []
   const filtered = users.filter((item) => {
     const term = search.trim().toLowerCase()
@@ -153,7 +165,7 @@ function AdminDashboard({ user, notify }: { user: User; notify: (text: string) =
     { accessorKey: 'status', header: 'Review', cell: ({ row }) => <span className={`status-pill status-${row.original.status}`}>{row.original.status}</span> },
     { accessorKey: 'role', header: 'Role', cell: ({ row }) => <select className="table-select role-select" aria-label={`Role for ${row.original.fullName}`} value={row.original.role} disabled={row.original.id === user.id || updateMutationRef.current.isPending || deleteMutationRef.current.isPending} onChange={(event) => updateMutationRef.current.mutate({ id: row.original.id, action: 'role', value: event.target.value })}><option value="admin">Admin</option><option value="super_admin">Super Admin</option></select> },
     { accessorKey: 'createdAt', header: 'Submitted', cell: ({ row }) => new Intl.DateTimeFormat('en-PH', { dateStyle: 'medium' }).format(new Date(row.original.createdAt)) },
-    { id: 'actions', header: 'Actions', cell: ({ row }) => row.original.id === user.id ? <span className="muted">Current account</span> : <div className="row-actions"><button type="button" className="review-action approve-action" aria-label={`Approve ${row.original.fullName}`} disabled={updateMutationRef.current.isPending || deleteMutationRef.current.isPending || row.original.status === 'approved'} onClick={() => updateMutationRef.current.mutate({ id: row.original.id, action: 'status', value: 'approved' })}><Check size={14} /> Approve</button><button type="button" className="review-action reject-action" title="Disapprove account" aria-label={`Disapprove ${row.original.fullName}`} disabled={updateMutationRef.current.isPending || deleteMutationRef.current.isPending || row.original.status === 'rejected'} onClick={() => updateMutationRef.current.mutate({ id: row.original.id, action: 'status', value: 'rejected' })}><X size={14} /></button><button type="button" className="review-action delete-action" title="Delete account" aria-label={`Delete account for ${row.original.fullName}`} disabled={updateMutationRef.current.isPending || deleteMutationRef.current.isPending} onClick={() => { deleteMutation.reset(); setDeleteTarget(row.original) }}><Trash2 size={14} /></button></div> },
+    { id: 'actions', header: 'Actions', cell: ({ row }) => row.original.id === user.id ? <span className="muted">Current account</span> : <div className="row-actions"><button type="button" className="review-action approve-action" aria-label={`Approve ${row.original.fullName}`} disabled={updateMutationRef.current.isPending || deleteMutationRef.current.isPending || row.original.status === 'approved'} onClick={() => updateMutationRef.current.mutate({ id: row.original.id, action: 'status', value: 'approved' })}><Check size={14} /> Approve</button><button type="button" className="review-action reject-action" title="Disapprove account" aria-label={`Disapprove ${row.original.fullName}`} disabled={updateMutationRef.current.isPending || deleteMutationRef.current.isPending || row.original.status === 'rejected'} onClick={() => updateMutationRef.current.mutate({ id: row.original.id, action: 'status', value: 'rejected' })}><X size={14} /></button><button type="button" className="review-action delete-action" title="Delete account" aria-label={`Delete account for ${row.original.fullName}`} disabled={updateMutationRef.current.isPending || deleteMutationRef.current.isPending} onClick={() => { setDeleteError(''); setDeleteTarget(row.original) }}><Trash2 size={14} /></button></div> },
   ], [notify, user.id])
   const table = useReactTable({ data: filtered, columns, state: { sorting }, onSortingChange: setSorting, getCoreRowModel: getCoreRowModel(), getSortedRowModel: getSortedRowModel(), getPaginationRowModel: getPaginationRowModel(), initialState: { pagination: { pageSize: 8 } } })
   const pending = users.filter((item) => item.status === 'pending').length
@@ -172,18 +184,15 @@ function AdminDashboard({ user, notify }: { user: User; notify: (text: string) =
       <div className="table-scroll"><table className="registry-table"><thead>{table.getHeaderGroups().map((group) => <tr key={group.id}>{group.headers.map((header) => <th key={header.id}>{header.isPlaceholder ? null : <button className="table-heading-button" type="button" onClick={header.column.getToggleSortingHandler()}>{flexRender(header.column.columnDef.header, header.getContext())}{header.column.getCanSort() && <ArrowDownUp size={12} />}</button>}</th>)}</tr>)}</thead><tbody>{usersQuery.isLoading ? <tr><td colSpan={columns.length} className="table-empty">Loading registrants…</td></tr> : table.getRowModel().rows.length ? table.getRowModel().rows.map((row) => <tr key={row.id}>{row.getVisibleCells().map((cell) => <td key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</td>)}</tr>) : <tr><td colSpan={columns.length} className="table-empty">No accounts match these filters.</td></tr>}</tbody></table></div>
       <div className="table-footer"><span>Showing {table.getRowModel().rows.length ? table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1 : 0}–{Math.min((table.getState().pagination.pageIndex + 1) * table.getState().pagination.pageSize, filtered.length)} of {filtered.length}</span><div><button type="button" className="icon-button" aria-label="Previous page" disabled={!table.getCanPreviousPage()} onClick={() => table.previousPage()}><ChevronLeft size={17} /></button><button type="button" className="icon-button" aria-label="Next page" disabled={!table.getCanNextPage()} onClick={() => table.nextPage()}><ChevronRight size={17} /></button></div></div>
     </section>{updateMutation.isPending && <div className="saving-note" role="status">Saving account changes…</div>}{deleteMutation.isPending && <div className="saving-note" role="status">Deleting account…</div>}
-    <Dialog.Root open={deleteTarget !== null} onOpenChange={(open) => { if (!open && !deleteMutation.isPending) setDeleteTarget(null) }}>
-      <Dialog.Portal>
-        <Dialog.Overlay className="confirmation-overlay" />
-        <Dialog.Content className="confirmation-dialog">
-          <div className="confirmation-heading"><span className="confirmation-icon"><Trash2 size={19} /></span><div><Dialog.Title>Delete account?</Dialog.Title><Dialog.Description>This will permanently remove this account and end its access.</Dialog.Description></div></div>
-          {deleteTarget && <div className="confirmation-account"><span className="confirmation-initials">{deleteTarget.fullName.split(/\s+/u).map((part) => part[0] ?? '').slice(0, 2).join('').toUpperCase()}</span><span><strong>{deleteTarget.fullName}</strong><small>{deleteTarget.username}</small></span></div>}
-          <p className="confirmation-warning">This action cannot be undone.</p>
-          {deleteMutation.error && <p className="inline-error" role="alert">{errorText(deleteMutation.error)}</p>}
-          <div className="confirmation-actions"><Dialog.Close asChild><button className="button button-secondary" type="button" disabled={deleteMutation.isPending}>Cancel</button></Dialog.Close><button className="button button-danger" type="button" disabled={deleteMutation.isPending || !deleteTarget} onClick={() => { if (deleteTarget) deleteMutation.mutate(deleteTarget.id) }}>{deleteMutation.isPending ? 'Deleting…' : 'Delete account'}</button></div>
-        </Dialog.Content>
-      </Dialog.Portal>
-    </Dialog.Root>
+    {deleteTarget && createPortal(<div className="confirmation-overlay" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget && !deleteMutation.isPending) setDeleteTarget(null) }}>
+      <section className="confirmation-dialog" role="alertdialog" aria-modal="true" aria-labelledby="delete-account-title" aria-describedby="delete-account-description" tabIndex={-1}>
+        <div className="confirmation-heading"><span className="confirmation-icon"><Trash2 size={19} /></span><div><h2 id="delete-account-title">Delete account?</h2><p id="delete-account-description">This will permanently remove this account and end its access.</p></div></div>
+        <div className="confirmation-account"><span className="confirmation-initials">{deleteTarget.fullName.split(/\s+/u).map((part) => part[0] ?? '').slice(0, 2).join('').toUpperCase()}</span><span><strong>{deleteTarget.fullName}</strong><small>{deleteTarget.username}</small></span></div>
+        <p className="confirmation-warning">This action cannot be undone.</p>
+        {deleteError && <p className="inline-error" role="alert">{deleteError}</p>}
+        <div className="confirmation-actions"><button ref={deleteCancelRef} className="button button-secondary" type="button" disabled={deleteMutation.isPending} onClick={() => setDeleteTarget(null)}>Cancel</button><button className="button button-danger" type="button" disabled={deleteMutation.isPending} onClick={() => deleteMutation.mutate(deleteTarget.id)}>{deleteMutation.isPending ? 'Deleting…' : 'Delete account'}</button></div>
+      </section>
+    </div>, document.body)}
   </div>
 }
 
