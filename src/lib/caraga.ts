@@ -18,10 +18,14 @@ export const offices: Office[] = [
   { name: 'Department of Agriculture', abbreviation: 'da', scope: 'designated', options: ['Regional AgriStat Focal Person', 'Regional AgriStat Alternate Focal Person'] },
 ]
 
-export function abbreviatedDesignation(officeName: string, designation: string) {
-  const prefix = `${officeName} - `
-  if (!designation.startsWith(prefix)) return designation
+export function expandedOfficeName(officeValue: string) {
+  return offices.find((office) => office.name === officeValue || office.abbreviation.toLowerCase() === officeValue.toLowerCase())?.name ?? officeValue
+}
 
-  const abbreviation = offices.find((office) => office.name === officeName)?.abbreviation.toUpperCase()
-  return abbreviation ? `${abbreviation} - ${designation.slice(prefix.length)}` : designation
+export function expandedDesignation(officeValue: string, designation: string) {
+  const officeName = expandedOfficeName(officeValue)
+  const prefix = `${officeValue} - `
+  const fullPrefix = `${officeName} - `
+  const remainder = designation.startsWith(prefix) ? designation.slice(prefix.length) : designation.startsWith(fullPrefix) ? designation.slice(fullPrefix.length) : null
+  return remainder === null ? designation : `${officeName} - ${remainder}`
 }

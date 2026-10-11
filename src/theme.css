@@ -210,7 +210,7 @@ button:disabled { cursor: not-allowed; opacity: .55; }
 .status-pending { color: #775c09; background: #fff0bd; }
 .status-rejected { color: #994a3d; background: #f8e5de; }
 .table-select { width: auto; height: 29px; border-color: #e1e2d9; padding: 0 22px 0 7px; background: #fffefa; font-size: 9px; }
-.role-select { max-width: 103px; }
+.role-select { width: 128px; max-width: 128px; }
 .date-cell { color: #777d72; font-size: 9px; white-space: nowrap; }
 .row-actions { display: flex; align-items: center; gap: 4px; }
 .review-action { display: inline-flex; min-height: 27px; align-items: center; gap: 4px; border: 1px solid #d8e5d7; border-radius: 2px; padding: 0 6px; color: #2d6948; background: #f2f8ed; cursor: pointer; font-size: 9px; font-weight: 700; white-space: nowrap; }
