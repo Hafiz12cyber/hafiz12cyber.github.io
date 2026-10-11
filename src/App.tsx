@@ -12,6 +12,7 @@ import { abbreviatedDesignation, municipalitiesByProvince, offices, provinces } 
 
 type Registration = { firstName: string; middleName: string; lastName: string; suffix: string; position: string; office: string; province: string; municipality: string; designated: string; email: string }
 const emptyRegistration: Registration = { firstName: '', middleName: '', lastName: '', suffix: '', position: '', office: '', province: '', municipality: '', designated: '', email: '' }
+const emptyRegistrantList: Registrant[] = []
 const errorText = (error: unknown) => error instanceof Error ? error.message : 'Something went wrong. Please try again.'
 
 function statusGradient(items: { value: number; color: string }[]) {
@@ -152,12 +153,12 @@ function AdminDashboard({ user, notify }: { user: User; notify: (text: string) =
     window.addEventListener('keydown', handleDeleteDialogKeydown)
     return () => window.removeEventListener('keydown', handleDeleteDialogKeydown)
   }, [deleteTarget])
-  const users = usersQuery.data ?? []
-  const filtered = users.filter((item) => {
+  const users = usersQuery.data ?? emptyRegistrantList
+  const filtered = useMemo(() => users.filter((item) => {
     const term = search.trim().toLowerCase()
     const match = !term || [item.fullName, item.email, item.username, item.designation].some((value) => value.toLowerCase().includes(term))
     return match && (status === 'all' || item.status === status) && (office === 'all' || item.office === office) && (province === 'all' || item.province === province)
-  })
+  }), [users, search, status, office, province])
   const columns = useMemo<ColumnDef<Registrant>[]>(() => [
     { accessorKey: 'fullName', header: 'Registrant', cell: ({ row }) => <div className="registrant-cell"><Avatar user={row.original} compact /><span><strong>{row.original.fullName}</strong><small>{row.original.email}</small></span></div> },
     { accessorKey: 'username', header: 'Account', cell: ({ row }) => <div className="account-cell"><strong>{row.original.username}</strong><span className="password-cell">{row.original.initialPassword ? <><span>••••••••••••</span><button className="icon-button mini-icon" type="button" title="Copy temporary password" aria-label="Copy temporary password" onClick={() => { void copyText(row.original.initialPassword ?? '').then((copied) => notify(copied ? 'Temporary password copied.' : 'Could not copy password. Please select and copy it manually.')) }}><Copy size={13} /></button></> : <span className="muted">Password changed</span>}</span></div> },
